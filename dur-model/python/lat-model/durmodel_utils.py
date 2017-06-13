@@ -294,7 +294,7 @@ def read_transitions(filename):
     # a list of transitions, add None to make it aligned with transition IDs
     transitions = [None]
     final_transition_states = {}
-    print >> sys.stderr, "Reading transition model..."
+    log.info('Reading transition model...')
     current_phone = None
     for l in open(filename):
         if l.startswith("Transition-state "):
@@ -310,7 +310,7 @@ def read_transitions(filename):
             transitions.append((current_phone, to_state))
         else:
             raise Exception("Unexpected line in transition model data: ", l)
-    print >> sys.stderr, "Finding final states"
+    log.info('Finding final states')
     for (i, transition) in enumerate(transitions):
         if transition is None:
             continue

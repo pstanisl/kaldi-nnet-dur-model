@@ -11,7 +11,6 @@ import sys
 from collections import OrderedDict
 from os.path import basename
 
-from pylearn2.datasets import dense_design_matrix
 from pylearn2.utils import serial
 from pylearn2.datasets import vector_spaces_dataset
 from pylearn2.space import CompositeSpace, VectorSpace, IndexSpace
@@ -35,6 +34,9 @@ log.addHandler(ch)
 
 # Script argument parser settings
 parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--encoding', action='store', dest='encoding',
+    help='encoding of the loaded files', default='utf-8')
 parser.add_argument(
     '--read-features', action="store", dest="read_features_filename",
     help="Read features from file")

@@ -4,6 +4,19 @@ PASHTO:
       consonants: ['4', 'C', 'G', 'J', 'N', 'S', 'Z', 'b', 'd', 'dZ', 'd`', 'dz', 'f', 'g', 'h', 'j', 'j\', 'k', 'l', 'm', 'n', 'n`', 'p', 'q', 'r`', 's', 's`', 't', 'tS', 't`', 'ts', 'w', 'x', 'z', 'z`']
       stop: ['?']
 
+CZECH:
+    # A C D E F I J N O Q R S T U Y Z a b c d e f g h i j k l m n o p r s t u v x y z
+    phoneme_classes:
+        # Fricative: ['v', 'z', 'Z', 'h', 'w', 'W', 'f', 's', 'S', 'ch', 'c', 'C']
+        VoicedFricative: ['v', 'z', 'Z', 'h', 'w', 'W']
+        VoicelessFricative: ['f', 's', 'S', 'ch', 'c', 'C']
+        Nasal: ['m', 'M', 'n', 'N', 'J']  # nazaly
+        Retroflex: ['l', 'j', 'r', 'R', 'Q']  # retroflexy
+        Stop: ['b', 'd', 'D', 'g', 'p', 't', 'T', 'k']  # plozivy
+        VoicedStop: ['b', 'd', 'D', 'g']  # zneĺe plozivy
+        VoicelessStop: ['p', 't', 'T', 'k']  # neznele plozivy
+        Vowel: ['a', 'e', 'o', 'A', 'E', 'O', 'y', 'Y', 'i', 'u', 'I', 'U']  # samohlasky
+
 ENGLISH:
     #syllabifier_conf:
     #    consonants: ['B', 'CH', 'D', 'DH', 'F', 'G', 'HH', 'JH', 'K', 'L', 'M', 'N', 'NG', 'P', 'R', 'S', 'SH', 'T', 'TH', 'V', 'W', 'Y', 'Z', 'ZH']

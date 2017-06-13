@@ -85,7 +85,6 @@ if [ $stage -le 2 ]; then
       $stress_arg \
       --write-features $dir/ali-lat.JOB.features \
       --save $dir/ali-lat.JOB.pkl.joblib \
-
       --encoding $encoding \
       $dir/transitions.txt $lang/phones/nonsilence.txt $lang/words.txt ${alidir}_phone_lat/ali-lat.JOB.gz || exit 1;
 

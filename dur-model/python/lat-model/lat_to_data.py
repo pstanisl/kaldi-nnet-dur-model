@@ -262,7 +262,7 @@ if __name__ == '__main__':
         log.info('Reading stress dictionary')
         stress_dict = durmodel_utils.load_stress_dict(
             args.stress_dict_filename)
-    log.info('stress dict: %s', len(stress_dict))
+        log.info('stress dict: %s', len(stress_dict))
 
     utt2spkid, speaker_ids = get_utt2spkid(args.utt2spk)
 

@@ -7,6 +7,7 @@ cmd=run.pl
 cuda_cmd=run.pl
 nj=4
 
+encoding="utf-8"
 language=ENGLISH
 stress_dict=
 pylearn_dir=~/tools/pylearn2
@@ -32,9 +33,10 @@ if [ $# -ne 4 ]; then
   echo "    --cmd (run.pl|queue.pl...)      # specify how to run the sub-processes."
   echo "    --cuda-cmd                      # specify how to run the neural network training (done using Theano/Pylearn)."
   echo "    --stage (0|1|2)                 # start training script from part-way through."
-  echo "    --pylearn-dir (0|1|2)           # base directory of Pylearn2."  
+  echo "    --pylearn-dir (0|1|2)           # base directory of Pylearn2."
   echo "    --language ENGLISH|ESTONIAN|FINNISH  # language of the data."
-  echo "    --stress-dict file              # Dictionary with lexical stress "  
+  echo "    --stress-dict file              # Dictionary with lexical stress "
+  echo "    --encoding                      # Coding of loaded files"
   echo
   echo "e.g.:"
   echo "local/train_dur_model.sh data/train data/lang exp/tri3a_ali exp/durmodel_tri3a"
@@ -72,10 +74,10 @@ if [ $stage -le 2 ]; then
   mkdir -p $dir
   # Save transition model in text form
   show-transitions $lang/phones.txt $alidir/${iter}.mdl > $dir/transitions.txt || exit 1;
-   
+
   $cmd JOB=1:$nj $dir/log/lat_to_data.JOB.log \
     THEANO_FLAGS=\"device=cpu\" \
-    python2.7 dur-model/python/lat-model/lat_to_data.py \
+    python dur-model/python/lat-model/lat_to_data.py \
       --left-context $left_context \
       --right-context $right_context \
       --language $language \
@@ -83,8 +85,10 @@ if [ $stage -le 2 ]; then
       $stress_arg \
       --write-features $dir/ali-lat.JOB.features \
       --save $dir/ali-lat.JOB.pkl.joblib \
+
+      --encoding $encoding \
       $dir/transitions.txt $lang/phones/nonsilence.txt $lang/words.txt ${alidir}_phone_lat/ali-lat.JOB.gz || exit 1;
-      
+
 fi
 
 # Accumulate training data to a single file
@@ -117,6 +121,6 @@ if [ $stage -le 5 ]; then
     PYTHONPATH=\"$PYTHONPATH:./dur-model/python/pylearn2/\" \
     THEANO_FLAGS=\"device=gpu\" \
     $pylearn_dir/bin/pylearn2-train $dir/durmodel.yaml || exit 1;
- 
+
 
 fi

@@ -4,13 +4,29 @@ Created on Sep 9, 2013
 
 @author: tanel
 '''
-import sys
+
+from __future__ import print_function
 from itertools import groupby
+
+import codecs
+import logging
 import math
+import os
 import re
 import syllabifier
+import sys
 import yaml
-import os
+
+# Logging settings
+log = logging.getLogger(os.path.basename(__file__))
+log.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler(sys.stderr)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    '%(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+log.addHandler(ch)
 
 LANGUAGES = yaml.load(open(os.path.dirname(__file__) + '/data/languages.yaml'))
 
@@ -32,6 +48,7 @@ def dur_function(dur):
 
 def encode(alist):
     return [(key, len(list(group))) for key, group in groupby(alist)]
+
 
 def syllabify(phonemes, language, nonsilence_phonemes):
     syllabifier_conf = LANGUAGES[language].get('syllabifier_conf', None)
@@ -78,8 +95,9 @@ def phone_runlengths_from_frames(frames, transitions):
     last_phone = ""
     for f in frames:
         # if phone != last_phone
-        # note that it's not correct if there are identical phonemes after each other
-        # but for some reason relying on transitions to final states fails sometimes
+        # note that it's not correct if there are identical phonemes after each
+        # other but for some reason relying on transitions to final states fails
+        # sometimes
         if n > 0 and transitions[f][0] != last_phone:
             phone_runlengths.append((last_phone.partition("_")[0], n))
             n = 1
@@ -89,16 +107,16 @@ def phone_runlengths_from_frames(frames, transitions):
     phone_runlengths.append((last_phone.partition("_")[0], n))
     return phone_runlengths
 
-def make_local(start_frame, word_id, frames, transitions, word_list, nonsilence_phonemes, language="ESTONIAN", stress_dict=None):
 
+def make_local(start_frame, word_id, frames, transitions, word_list,
+               nonsilence_phonemes, language="ESTONIAN", stress_dict=None):
     phone_rl_names = phone_runlengths_from_frames(frames, transitions)
-
-    #print >> sys.stderr, phone_rl_names
 
     word = word_list[word_id]
 
     features_and_dur_seq = []
-    syllables = syllabify([p[0] for p in phone_rl_names], language, nonsilence_phonemes)
+    syllables = syllabify(
+        [p[0] for p in phone_rl_names], language, nonsilence_phonemes)
     syllable_ids = None
     if syllables:
         syllable_ids = []
@@ -301,3 +319,10 @@ def read_transitions(filename):
         else:
             transitions[i] = (transition[0], transition[1], False)
     return transitions
+
+
+def write_features(path, feature_dict, encoding='utf-8'):
+    with codecs.open(path, 'wb', encoding=encoding) as file_features:
+        for feature in feature_dict:
+            file_features.write(feature)
+            file_features.write('\n')

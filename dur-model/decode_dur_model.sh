@@ -39,7 +39,7 @@ if [ $# -ne 6 ]; then
   echo "    --stage (0|1|2)                 # start training script from part-way through."
   echo "    --language ENGLISH|ESTONIAN|FINNISH  # language of the data."
   echo "    --fillers filler1,filler2       # comma-seperated list of filler words (<sil> should escaped as '\<sil\>')."
-  echo "    --stress-dict file              # Dictionary with lexical stress "    
+  echo "    --stress-dict file              # Dictionary with lexical stress "
   echo
   echo "e.g.:"
   echo "dur-model/decode_dur_model.sh data/lang exp/tri3/graph data/train data/lang exp/tri3a_ali exp/durmodel_tri3a"
@@ -70,13 +70,13 @@ if [ $stage -le 0 ]; then
   elif [ -f $graphdir/phones/align_lexicon.int ]; then
     word_align_method="align_lexicon"
   else
-     echo "$0: expecting either $graphdir/phones/word_boundary.int or $lang/phones/align_lexicon.int to exist" 
-     exit 1; 
+     echo "$0: expecting either $graphdir/phones/word_boundary.int or $lang/phones/align_lexicon.int to exist"
+     exit 1;
   fi
 
   echo "$0: Converting decoding lattices to word-aligned lattices..."
   mkdir -p $dur_model_dir/decode/log
-  if [ "$word_align_method" == "word_boundary" ]; then  
+  if [ "$word_align_method" == "word_boundary" ]; then
     $cmd JOB=1:$nj $decode_dir/log/lattice-to-phone-lattice.JOB.log \
       lattice-align-words \
         --output-error-lats \
@@ -90,7 +90,7 @@ if [ $stage -le 0 ]; then
         --output-if-empty=true \
         $graphdir/phones/align_lexicon.int \
         $src_decode_dir/../${iter}.mdl "ark:gunzip -c $src_decode_dir/lat.JOB.gz \|" ark,t:- \| \
-       gzip -c \> $decode_dir/ali_lat.JOB.gz || exit 1    
+       gzip -c \> $decode_dir/ali_lat.JOB.gz || exit 1
   fi
 fi
 
@@ -108,12 +108,12 @@ if [ $stage -le 1 ]; then
   else
     speaker_args="--utt2spk $dur_model_dir/utt2spk --speakers $dur_model_dir/speakers.txt"
   fi
-  
+
 
   if "$ignore_speakers"; then
     speaker_args=""
   fi
-  
+
   $cuda_cmd JOB=1:$nj $decode_dir/log/process_lattice.JOB.log \
     set -o pipefail \; \
     zcat $decode_dir/ali_lat.JOB.gz \| \
@@ -126,6 +126,7 @@ if [ $stage -le 1 ]; then
         --output-extended-lat true \
         --language $language \
         --fillers "$fillers" \
+        --encoding cp1250 \
         $speaker_args \
         $stress_arg \
         $dur_model_dir/transitions.txt $langdir/phones/nonsilence.txt $graphdir/words.txt \
@@ -139,7 +140,7 @@ if [ $stage -le 2 ]; then
     for penalty in $penalties; do
       echo "$0: Using scale $scale and phone penalty $penalty to rescore the lattices"
       extended_decode_dir=${decode_dir}/s${scale}_p${penalty};
-      mkdir -p $extended_decode_dir;      
+      mkdir -p $extended_decode_dir;
       cp ${src_decode_dir}/../${iter}.mdl ${extended_decode_dir}/../${iter}.mdl
       cp ${src_decode_dir}/num_jobs ${extended_decode_dir}/num_jobs
       $cmd JOB=1:$nj $extended_decode_dir/log/extended_lat_to_lat.JOB.log \
@@ -148,16 +149,16 @@ if [ $stage -le 2 ]; then
         THEANO_FLAGS=\"device=cpu\" \
         python2.7 dur-model/python/lat-model/extended_lat_to_lat.py $scale $penalty \| \
         gzip -c \> $extended_decode_dir/lat.JOB.gz || exit 1
-        
+
       if ! $skip_scoring ; then
         if [ ! -x $score_cmd ]; then
           echo "Not scoring because $score_cmd does not exist or not executable."
         else
           echo "$0: Scoring..."
-          $score_cmd --cmd "$cmd" $scoring_opts $data $graphdir $extended_decode_dir || exit 1      
+          $score_cmd --cmd "$cmd" $scoring_opts $data $graphdir $extended_decode_dir || exit 1
         fi
       fi
-     
+
     done;
   done
 fi

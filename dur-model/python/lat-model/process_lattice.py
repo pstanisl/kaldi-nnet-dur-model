@@ -31,6 +31,9 @@ log.addHandler(ch)
 # Script argument parser settings
 parser = argparse.ArgumentParser()
 parser.add_argument(
+    '--encoding', action='store', dest='encoding',
+    help='encoding of the loaded files', default='utf-8')
+parser.add_argument(
     '--read-features', action='store', dest='read_features_filename',
     help='Read features from file')
 parser.add_argument(

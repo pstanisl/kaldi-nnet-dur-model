@@ -1,11 +1,15 @@
-__author__ = 'tanel'
+#!/usr/bin/env python
 '''
 Created on Sep 9, 2013
 
 @author: tanel
 '''
+from __future__ import print_function
+
+__author__ = 'tanel'
 
 import sys
+
 
 class Arc:
     def __init__(self, id, start, end, word_id, score1, score2, phone_ids):
@@ -21,6 +25,7 @@ class Arc:
         self.start_frame = -1
         self.end_frame = -1
 
+
 class Lattice:
 
     def __init__(self, name, arcs, final_states):
@@ -33,8 +38,6 @@ class Lattice:
             self.next_arcs.setdefault(arc.start, []).append(arc)
             self.prev_arcs.setdefault(arc.end, []).append(arc)
 
-
-
     def get_previous_arcs(self, arc):
         return self.prev_arcs.get(arc.start, [])
 
@@ -42,24 +45,27 @@ class Lattice:
         return self.next_arcs.get(arc.end, [])
 
     def to_lat(self, output):
-        print >>output, self.name
+        print(self.name, file=output)
         for arc in self.arcs:
-            print >>output, "%d %d  %d  %f,%f,%s" % (arc.start, arc.end, arc.word_id, arc.score1, arc.score2,
-                                                     "_".join([str(i) for i in arc.phone_ids]))
+            print('{:d} {:d}  {:d}  {:f},{:f},{}'.format(
+                arc.start, arc.end, arc.word_id, arc.score1, arc.score2,
+                '_'.join([str(i) for i in arc.phone_ids])), file=output)
         for final_state in self.final_states:
-            print >>output, final_state
+            print(final_state, file=output)
 
-        print >>output
+        print(file=output)
 
     def to_extended_lat(self, output):
-        print >>output, self.name
+        print(self.name, file=output)
         for arc in self.arcs:
-            print >>output, "%d %d  %d  %f,%f,%f,%f,%s" % (arc.start, arc.end, arc.word_id, arc.score1, arc.score2,
-                                                           arc.additional_score1, arc.additional_score2, "_".join([str(i) for i in arc.phone_ids]))
+            print('{:d} {:d}  {:d}  {:f},{:f},{:f},{:f},{}'.format(
+                arc.start, arc.end, arc.word_id, arc.score1, arc.score2,
+                arc.additional_score1, arc.additional_score2,
+                '_'.join([str(i) for i in arc.phone_ids])), file=output)
         for final_state in self.final_states:
-            print >>output, final_state
+            print(final_state, file=output)
 
-        print >>output
+        print(file=output)
 
 
 def set_next_arc_start_frames(arc, arcs_by_start, start_frame):
@@ -72,7 +78,7 @@ def set_next_arc_start_frames(arc, arcs_by_start, start_frame):
 def parse_aligned_lattice(lines):
     line = ''
     name = ''
-    try: 
+    try:
         name = lines[0].strip()
         arcs = []
         final_states = []
@@ -84,11 +90,11 @@ def parse_aligned_lattice(lines):
                 start = int(ss[0])
                 end = int(ss[1])
                 word_id = int(ss[2])
-                weight_parts = ss[3].split(",")
+                weight_parts = ss[3].split(',')
                 score1 = float(weight_parts[0])
                 score2 = float(weight_parts[1])
                 if len(weight_parts[2]) > 0:
-                    frames = [int(f) for f in weight_parts[2].split("_")]
+                    frames = [int(f) for f in weight_parts[2].split('_')]
                 else:
                     frames = []
                 arc = Arc(i, start, end, word_id, score1, score2, frames)
@@ -101,12 +107,13 @@ def parse_aligned_lattice(lines):
             else:
                 final_states.append(int(ss[0]))
 
-        #for arc in arcs_by_start[0]:
-        #    set_next_arc_start_frames(arc, arcs_by_start, 0)
+        # for arc in arcs_by_start[0]:
+        #     set_next_arc_start_frames(arc, arcs_by_start, 0)
 
         lat = Lattice(name, arcs, final_states)
         return lat
     except:
         e = sys.exc_info()[0]
-        raise Exception("Failed to process lattice %s: error at line %s (%s)" % (name, line, e))
-
+        raise Exception(
+            'Failed to process lattice {}: error at line {} ({})'.format(
+                name, line, e))

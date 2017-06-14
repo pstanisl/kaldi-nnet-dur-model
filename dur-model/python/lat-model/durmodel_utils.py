@@ -64,21 +64,28 @@ def syllabify(phonemes, language, nonsilence_phonemes):
 def load_stress_dict(filename):
     result = {}
     for l in open(filename):
-        if l.startswith(";;;"):
+        if l.startswith(';;;'):
             continue
         ss = l.split()
         word = ss[0]
-        word = re.sub("(\d)$", "", word)
-        phonemes = [re.sub("\d", "", x).upper() for x in ss[1:]]
+        word = re.sub('(\d)$', ', word)
+        phonemes = [re.sub('\d', ', x).upper() for x in ss[1:]]
         stress = [0] * len(phonemes)
         for i, x in enumerate(ss[1:]):
-            if x.endswith("1"):
+            if x.endswith('1'):
                 stress[i] = 1
-            if x.endswith("2"):
+            if x.endswith('2'):
                 stress[i] = 2
 
         result.setdefault(word, []).append((phonemes, stress))
     return result
+
+
+def get_features(path, encoding='utf-8'):
+    log.debug('-> loading from: %s', path)
+    with codecs.open(path, encoding=encoding) as file_features:
+        for i, feature in file_features:
+            yield feature.strip(), i
 
 
 def get_stress(word, phonemes, stress_dict):
@@ -89,27 +96,51 @@ def get_stress(word, phonemes, stress_dict):
     return [0] * len(phonemes)
 
 
+def get_utt2spkid(path, encoding='utf-8'):
+    if not path:
+        return None, {}
+
+    utt2spkid = {}
+    speaker_ids = {}
+
+    log.debug('-> loading from: %s', path)
+
+    with codecs.open(path, encoding=encoding) as file_utt2spk:
+        for line in file_utt2spk:
+            ss = line.split()
+            utt2spkid[ss[0]] = speaker_ids.setdefault(ss[1], len(speaker_ids))
+
+    return utt2spkid, speaker_ids
+
+
+def get_words(path, encoding='utf-8'):
+    log.debug('-> loading from: %s', path)
+    with codecs.open(path, encoding=encoding) as file_words:
+        for line in file_words:
+            yield line.split()[0]
+
+
 def phone_runlengths_from_frames(frames, transitions):
     phone_runlengths = []
     n = 0
-    last_phone = ""
+    last_phone = '
     for f in frames:
         # if phone != last_phone
         # note that it's not correct if there are identical phonemes after each
         # other but for some reason relying on transitions to final states fails
         # sometimes
         if n > 0 and transitions[f][0] != last_phone:
-            phone_runlengths.append((last_phone.partition("_")[0], n))
+            phone_runlengths.append((last_phone.partition('_')[0], n))
             n = 1
         else:
             n += 1
         last_phone = transitions[f][0]
-    phone_runlengths.append((last_phone.partition("_")[0], n))
+    phone_runlengths.append((last_phone.partition('_')[0], n))
     return phone_runlengths
 
 
 def make_local(start_frame, word_id, frames, transitions, word_list,
-               nonsilence_phonemes, language="ESTONIAN", stress_dict=None):
+               nonsilence_phonemes, language='ESTONIAN', stress_dict=None):
     phone_rl_names = phone_runlengths_from_frames(frames, transitions)
 
     word = word_list[word_id]
@@ -129,27 +160,27 @@ def make_local(start_frame, word_id, frames, transitions, word_list,
     current_start_frame = start_frame
     for (phone, dur) in phone_rl_names:
         features = []
-        features.append(("%s" % phone, 1))
-        for (kl, phonemes) in LANGUAGES[language]["phoneme_classes"].iteritems():
+        features.append(('%s' % phone, 1))
+        for (kl, phonemes) in LANGUAGES[language]['phoneme_classes'].iteritems():
             if phone in phonemes:
                 features.append((kl, 1))
         if syllable_ids:
-            features.append(("syllable", syllable_ids[i]))
+            features.append(('syllable', syllable_ids[i]))
 
         features_and_dur_seq.append((features, dur))
 
         i += 1
         current_start_frame += dur
     if len(phone_rl_names) > 1:
-        features_and_dur_seq[0][0].append(("word_initial", 1))
-        features_and_dur_seq[-1][0].append(("word_final", 1))
+        features_and_dur_seq[0][0].append(('word_initial', 1))
+        features_and_dur_seq[-1][0].append(('word_final', 1))
     elif phone_rl_names[0][0] in nonsilence_phonemes:
-        features_and_dur_seq[0][0].append(("single_phoneme", 1))
+        features_and_dur_seq[0][0].append(('single_phoneme', 1))
     if stress_dict:
         stress = get_stress(word, [p[0].upper() for p in phone_rl_names], stress_dict)
         for i, s in enumerate(stress):
             if s > 0:
-                features_and_dur_seq[i][0].append(("stress%d" % s, 1))
+                features_and_dur_seq[i][0].append(('stress%d' % s, 1))
 
     return features_and_dur_seq
 
@@ -179,20 +210,20 @@ def make_linear(feature_and_dur_seqs, nonsilence_phonemes, speaker_id):
             for j in range(1, LEFT_CONTEXT + 1):
                 if i - j >= 0:
                     full_feature_list.extend(
-                        [("pos-%d:%s" % (j, s), value) for (s, value) in local_feature_seq[i - j][0] if not s.startswith("_")])
+                        [('pos-%d:%s' % (j, s), value) for (s, value) in local_feature_seq[i - j][0] if not s.startswith('_')])
                     if USE_DURATION_FEATURE:
-                        full_feature_list.append(("pos-%d:dur" % j, dur_function(local_feature_seq[i - j][1])))
+                        full_feature_list.append(('pos-%d:dur' % j, dur_function(local_feature_seq[i - j][1])))
                 else:
-                    full_feature_list.append(("pos-%d:<s>" % j, 1))
+                    full_feature_list.append(('pos-%d:<s>' % j, 1))
                     if USE_DURATION_FEATURE:
-                        full_feature_list.append(("pos-%d:dur" % j, dur_function(10)))
+                        full_feature_list.append(('pos-%d:dur' % j, dur_function(10)))
 
             for j in range(1, RIGHT_CONTEXT + 1):
                 if i + j < len(local_feature_seq):
                     full_feature_list.extend(
-                        [("pos+%d:%s" % (j, s), value) for (s, value) in local_feature_seq[i + j][0] if not s.startswith("_")])
+                        [('pos+%d:%s' % (j, s), value) for (s, value) in local_feature_seq[i + j][0] if not s.startswith('_')])
                 else:
-                    full_feature_list.append(("pos+%d:</s>" % j, 1))
+                    full_feature_list.append(('pos+%d:</s>' % j, 1))
 
             full_feature_seq.append((full_feature_list, speaker_id, dur))
             i += 1
@@ -204,18 +235,18 @@ def get_context_features_and_durs(lattice, feature_and_dur_seqs):
     contexts = []
 
     for i, arc in enumerate(lattice.arcs):
-        #print "--- processing arc", arc
+        #print '--- processing arc', arc
         contexts_map = {}
         prev_arcs = lattice.get_previous_arcs(arc)
         if len(prev_arcs) > 0:
             prev_arc = prev_arcs[0]
-            #print "prev_arc: ", prev_arc
+            #print 'prev_arc: ', prev_arc
             prev_arc_id = prev_arc.id
             index_of_prev_phone = -1
             for j in range(1, LEFT_CONTEXT + 1):
-                #print "finding context", -j
+                #print 'finding context', -j
                 contexts_map[-j] = feature_and_dur_seqs[prev_arc_id][index_of_prev_phone][0] +\
-                                   [("dur", dur_function(feature_and_dur_seqs[prev_arc_id][index_of_prev_phone][1]))]
+                                   [('dur', dur_function(feature_and_dur_seqs[prev_arc_id][index_of_prev_phone][1]))]
 
                 index_of_prev_phone -= 1
                 if index_of_prev_phone < -len(feature_and_dur_seqs[prev_arc_id]):
@@ -223,25 +254,25 @@ def get_context_features_and_durs(lattice, feature_and_dur_seqs):
                     if len(prev_arcs) > 0:
                         prev_arc = prev_arcs[0]
                         prev_arc_id = prev_arc.id
-                        #print "new prev arc:", prev_arc
+                        #print 'new prev arc:', prev_arc
                         index_of_prev_phone = -1
                     else:
-                        contexts_map[-j - 1] = [("<s>", 1), ("dur", dur_function(10))]
+                        contexts_map[-j - 1] = [('<s>', 1), ('dur', dur_function(10))]
                         break
         else:
             for j in range(1, LEFT_CONTEXT + 1):
-                contexts_map[-j] = [("<s>", 1),
-                                    ("dur", dur_function(10))]
+                contexts_map[-j] = [('<s>', 1),
+                                    ('dur', dur_function(10))]
 
 
         next_arcs = lattice.get_next_arcs(arc)
         if len(next_arcs) > 0:
             next_arc = next_arcs[0]
-            #print "next_arc: ", next_arc
+            #print 'next_arc: ', next_arc
             next_arc_id = next_arc.id
             index_of_next_phone = 0
             for j in range(1, RIGHT_CONTEXT + 1):
-                #print "finding context", j
+                #print 'finding context', j
                 contexts_map[j] = feature_and_dur_seqs[next_arc_id][index_of_next_phone][0]
                 index_of_next_phone += 1
                 if index_of_next_phone >= len(feature_and_dur_seqs[next_arc_id]):
@@ -249,13 +280,13 @@ def get_context_features_and_durs(lattice, feature_and_dur_seqs):
                     if len(next_arcs) > 0:
                         next_arc = next_arcs[0]
                         next_arc_id = next_arc.id
-                        #print "new next arc:", next_arc
+                        #print 'new next arc:', next_arc
                         index_of_next_phone = 0
                     else:
-                        contexts_map[j + 1] = [("</s>", 1)]
+                        contexts_map[j + 1] = [('</s>', 1)]
                         break
         else:
-            contexts_map[1] = [("</s>", 1)]
+            contexts_map[1] = [('</s>', 1)]
 
         contexts.append(contexts_map)
     return contexts
@@ -271,19 +302,19 @@ def compile_features_for_word(context, local_feature_seq):
             delta_pos = i - j
             if delta_pos >= 0:
                 full_feature_list.extend(
-                    [("pos-%d:%s" % (j, s), value) for (s, value) in local_feature_seq[i - j][0] if not s.startswith("_")])
+                    [('pos-%d:%s' % (j, s), value) for (s, value) in local_feature_seq[i - j][0] if not s.startswith('_')])
                 if USE_DURATION_FEATURE:
-                    full_feature_list.append(("pos-%d:dur" % j, dur_function(local_feature_seq[i - j][1])))
+                    full_feature_list.append(('pos-%d:dur' % j, dur_function(local_feature_seq[i - j][1])))
             else:
-                full_feature_list.extend([("pos-%d:%s" % (j, s), value) for (s, value) in context.get(delta_pos, [])])
+                full_feature_list.extend([('pos-%d:%s' % (j, s), value) for (s, value) in context.get(delta_pos, [])])
 
         for j in range(1, RIGHT_CONTEXT + 1):
             if i + j < len(local_feature_seq):
                 full_feature_list.extend(
-                    [("pos+%d:%s" % (j, s), value) for (s, value) in local_feature_seq[i + j][0] if not s.startswith("_")])
+                    [('pos+%d:%s' % (j, s), value) for (s, value) in local_feature_seq[i + j][0] if not s.startswith('_')])
             else:
                 full_feature_list.extend(
-                    [("pos+%d:%s" % (j, s), value) for (s, value) in context.get(j - (len(local_feature_seq) - i - 1), [])])
+                    [('pos+%d:%s' % (j, s), value) for (s, value) in context.get(j - (len(local_feature_seq) - i - 1), [])])
 
         full_feature_seq.append((full_feature_list, dur))
         i += 1
@@ -297,19 +328,19 @@ def read_transitions(filename):
     log.info('Reading transition model...')
     current_phone = None
     for l in open(filename):
-        if l.startswith("Transition-state "):
+        if l.startswith('Transition-state '):
             ss = l.split()
             current_phone = ss[4]
             hmm_state = int(ss[7])
             final_transition_states[current_phone] = hmm_state
-        elif l.startswith(" Transition-id = "):
+        elif l.startswith(' Transition-id = '):
             ss = l.split()
             to_state = None
-            if len(ss) == 9 and ss[7] == "->":
+            if len(ss) == 9 and ss[7] == '->':
                 to_state = int(ss[8][:-1])
             transitions.append((current_phone, to_state))
         else:
-            raise Exception("Unexpected line in transition model data: ", l)
+            raise Exception('Unexpected line in transition model data: ', l)
     log.info('Finding final states')
     for (i, transition) in enumerate(transitions):
         if transition is None:

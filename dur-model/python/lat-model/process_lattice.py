@@ -250,7 +250,10 @@ if __name__ == '__main__':
 
                 # print(prob_vector, file=sys.stderr)
                 if not args.output_extended_lat:
-                    total_word_dur_score = log_prob_vector.sum() * args.duration_scale - num_phones * np.log(args.phone_penalty) * args.duration_scale
+                    total_word_dur_score = log_prob_vector.sum() \
+                        * args.duration_scale - num_phones \
+                        * np.log(args.phone_penalty) \
+                        * args.duration_scale
                     # print(-total_word_dur_score, file=sys.stderr)
                     lat.arcs[i].score1 -= total_word_dur_score
                 else:

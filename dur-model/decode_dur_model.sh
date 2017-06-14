@@ -24,6 +24,7 @@ score_cmd=./local/score.sh
 scoring_opts="--min-lmwt 9 --max-lmwt 15"
 stage=0
 
+iter_model_dir=$src_decode_dir/..
 iter=final
 echo "$0 $@"  # Print the command line for logging
 
@@ -81,7 +82,7 @@ if [ $stage -le 0 ]; then
       lattice-align-words \
         --output-error-lats \
         $graphdir/phones/word_boundary.int \
-        $src_decode_dir/../${iter}.mdl "ark:gunzip -c $src_decode_dir/lat.JOB.gz \|" ark,t:- \| \
+        $iter_model_dir/${iter}.mdl "ark:gunzip -c $src_decode_dir/lat.JOB.gz \|" ark,t:- \| \
        gzip -c \> $decode_dir/ali_lat.JOB.gz || exit 1
   else
     $cmd JOB=1:$nj $decode_dir/log/lattice-to-phone-lattice.JOB.log \
@@ -89,7 +90,7 @@ if [ $stage -le 0 ]; then
         --output-error-lats=true \
         --output-if-empty=true \
         $graphdir/phones/align_lexicon.int \
-        $src_decode_dir/../${iter}.mdl "ark:gunzip -c $src_decode_dir/lat.JOB.gz \|" ark,t:- \| \
+        $iter_model_dir/${iter}.mdl "ark:gunzip -c $src_decode_dir/lat.JOB.gz \|" ark,t:- \| \
        gzip -c \> $decode_dir/ali_lat.JOB.gz || exit 1
   fi
 fi
@@ -141,7 +142,7 @@ if [ $stage -le 2 ]; then
       echo "$0: Using scale $scale and phone penalty $penalty to rescore the lattices"
       extended_decode_dir=${decode_dir}/s${scale}_p${penalty};
       mkdir -p $extended_decode_dir;
-      cp ${src_decode_dir}/../${iter}.mdl ${extended_decode_dir}/../${iter}.mdl
+      cp ${iter_model_dir}/${iter}.mdl ${extended_decode_dir}/../${iter}.mdl
       cp ${src_decode_dir}/num_jobs ${extended_decode_dir}/num_jobs
       $cmd JOB=1:$nj $extended_decode_dir/log/extended_lat_to_lat.JOB.log \
         set -o pipefail \; \

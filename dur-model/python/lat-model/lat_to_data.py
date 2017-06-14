@@ -16,6 +16,8 @@ from pylearn2.datasets import vector_spaces_dataset
 from pylearn2.space import CompositeSpace, VectorSpace, IndexSpace
 from pylearn2.sandbox.rnn.space import SequenceDataSpace
 
+from durmodel_urils import get_nonsilence_phonemes
+from durmodel_utils import get_words, get_utt2spkid
 from durmodel_utils import read_transitions
 
 import lattice
@@ -203,37 +205,6 @@ def get_features_and_durs(train_lattice, sequences):
             sentence_lines = []
 
     log.info('Read alignments for %d utterances', num_sentences_read)
-
-
-def get_nonsilence_phonemes(path, encoding='utf-8'):
-    log.debug('-> loading from: %s', path)
-    with codecs.open(path, encoding=encoding) as file_nonsilence:
-        for line in file_nonsilence:
-            yield line.strip().partition('_')[0]
-
-
-def get_utt2spkid(path, encoding='utf-8'):
-    if path:
-        return None, {}
-
-    utt2spkid = {}
-    speaker_ids = {}
-
-    log.debug('-> loading from: %s', path)
-
-    with codecs.open(path, encoding=encoding) as file_utt2spk:
-        for line in file_utt2spk:
-            ss = line.split()
-            utt2spkid[ss[0]] = speaker_ids.setdefault(ss[1], len(speaker_ids))
-
-    return utt2spkid, speaker_ids
-
-
-def get_words(path, encoding='utf-8'):
-    log.debug('-> loading from: %s', path)
-    with codecs.open(path, encoding=encoding) as file_words:
-        for line in file_words:
-            yield line.split()[0]
 
 
 if __name__ == '__main__':

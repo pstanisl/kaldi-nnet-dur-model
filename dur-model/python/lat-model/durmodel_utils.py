@@ -67,8 +67,8 @@ def load_stress_dict(filename):
             continue
         ss = l.split()
         word = ss[0]
-        word = re.sub('(\d)$', ', word)
-        phonemes = [re.sub('\d', ', x).upper() for x in ss[1:]]
+        word = re.sub('(\d)$', '', word)
+        phonemes = [re.sub('\d', '', x).upper() for x in ss[1:]]
         stress = [0] * len(phonemes)
         for i, x in enumerate(ss[1:]):
             if x.endswith('1'):
@@ -129,12 +129,12 @@ def get_words(path, encoding='utf-8'):
 def phone_runlengths_from_frames(frames, transitions):
     phone_runlengths = []
     n = 0
-    last_phone = '
+    last_phone = ''
     for f in frames:
         # if phone != last_phone
         # note that it's not correct if there are identical phonemes after each
-        # other but for some reason relying on transitions to final states fails
-        # sometimes
+        # other but for some reason relying on transitions to final states
+        # fails sometimes
         if n > 0 and transitions[f][0] != last_phone:
             phone_runlengths.append((last_phone.partition('_')[0], n))
             n = 1
@@ -183,7 +183,8 @@ def make_local(start_frame, word_id, frames, transitions, word_list,
     elif phone_rl_names[0][0] in nonsilence_phonemes:
         features_and_dur_seq[0][0].append(('single_phoneme', 1))
     if stress_dict:
-        stress = get_stress(word, [p[0].upper() for p in phone_rl_names], stress_dict)
+        stress = get_stress(
+            word, [p[0].upper() for p in phone_rl_names], stress_dict)
         for i, s in enumerate(stress):
             if s > 0:
                 features_and_dur_seq[i][0].append(('stress%d' % s, 1))
@@ -202,7 +203,7 @@ def make_linear(feature_and_dur_seqs, nonsilence_phonemes, speaker_id):
         for (feature_list, dur) in feature_and_dur_seq:
             is_filler = True
             tmp_feature_set = set(feature_list)
-            #print >> sys.stderr, tmp_feature_set
+            # print(tmp_feature_set, file=sys.stderr)
             if SKIP_FILLERS:
                 for phoneme in nonsilence_phonemes:
                     if (phoneme, 1) in tmp_feature_set:
@@ -218,11 +219,13 @@ def make_linear(feature_and_dur_seqs, nonsilence_phonemes, speaker_id):
                     full_feature_list.extend(
                         [('pos-%d:%s' % (j, s), value) for (s, value) in local_feature_seq[i - j][0] if not s.startswith('_')])
                     if USE_DURATION_FEATURE:
-                        full_feature_list.append(('pos-%d:dur' % j, dur_function(local_feature_seq[i - j][1])))
+                        full_feature_list.append(('pos-%d:dur' % j, dur_function(
+                            local_feature_seq[i - j][1])))
                 else:
                     full_feature_list.append(('pos-%d:<s>' % j, 1))
                     if USE_DURATION_FEATURE:
-                        full_feature_list.append(('pos-%d:dur' % j, dur_function(10)))
+                        full_feature_list.append(('pos-%d:dur' % j,
+                                                 dur_function(10)))
 
             for j in range(1, RIGHT_CONTEXT + 1):
                 if i + j < len(local_feature_seq):
@@ -241,16 +244,16 @@ def get_context_features_and_durs(lattice, feature_and_dur_seqs):
     contexts = []
 
     for i, arc in enumerate(lattice.arcs):
-        #print '--- processing arc', arc
+        # print('--- processing arc', arc)
         contexts_map = {}
         prev_arcs = lattice.get_previous_arcs(arc)
         if len(prev_arcs) > 0:
             prev_arc = prev_arcs[0]
-            #print 'prev_arc: ', prev_arc
+            # print('prev_arc: ', prev_arc)
             prev_arc_id = prev_arc.id
             index_of_prev_phone = -1
             for j in range(1, LEFT_CONTEXT + 1):
-                #print 'finding context', -j
+                # print('finding context', -j)
                 contexts_map[-j] = feature_and_dur_seqs[prev_arc_id][index_of_prev_phone][0] +\
                                    [('dur', dur_function(feature_and_dur_seqs[prev_arc_id][index_of_prev_phone][1]))]
 
@@ -260,25 +263,26 @@ def get_context_features_and_durs(lattice, feature_and_dur_seqs):
                     if len(prev_arcs) > 0:
                         prev_arc = prev_arcs[0]
                         prev_arc_id = prev_arc.id
-                        #print 'new prev arc:', prev_arc
+                        # print('new prev arc:', prev_arc)
                         index_of_prev_phone = -1
                     else:
-                        contexts_map[-j - 1] = [('<s>', 1), ('dur', dur_function(10))]
+                        contexts_map[-j - 1] = [
+                            ('<s>', 1),
+                            ('dur', dur_function(10))]
                         break
         else:
             for j in range(1, LEFT_CONTEXT + 1):
                 contexts_map[-j] = [('<s>', 1),
                                     ('dur', dur_function(10))]
 
-
         next_arcs = lattice.get_next_arcs(arc)
         if len(next_arcs) > 0:
             next_arc = next_arcs[0]
-            #print 'next_arc: ', next_arc
+            # print('next_arc: ', next_arc)
             next_arc_id = next_arc.id
             index_of_next_phone = 0
             for j in range(1, RIGHT_CONTEXT + 1):
-                #print 'finding context', j
+                # print('finding context', j)
                 contexts_map[j] = feature_and_dur_seqs[next_arc_id][index_of_next_phone][0]
                 index_of_next_phone += 1
                 if index_of_next_phone >= len(feature_and_dur_seqs[next_arc_id]):
@@ -286,7 +290,7 @@ def get_context_features_and_durs(lattice, feature_and_dur_seqs):
                     if len(next_arcs) > 0:
                         next_arc = next_arcs[0]
                         next_arc_id = next_arc.id
-                        #print 'new next arc:', next_arc
+                        # print('new next arc:', next_arc)
                         index_of_next_phone = 0
                     else:
                         contexts_map[j + 1] = [('</s>', 1)]

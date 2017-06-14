@@ -2,7 +2,6 @@
 from __future__ import print_function
 
 import argparse
-import codecs
 import gzip
 import logging
 import numpy as np
@@ -15,10 +14,6 @@ from pylearn2.utils import serial
 from pylearn2.datasets import vector_spaces_dataset
 from pylearn2.space import CompositeSpace, VectorSpace, IndexSpace
 from pylearn2.sandbox.rnn.space import SequenceDataSpace
-
-from durmodel_urils import get_nonsilence_phonemes
-from durmodel_utils import get_words, get_utt2spkid
-from durmodel_utils import read_transitions
 
 import lattice
 import durmodel_utils
@@ -40,34 +35,34 @@ parser.add_argument(
     '--encoding', action='store', dest='encoding',
     help='encoding of the loaded files', default='utf-8')
 parser.add_argument(
-    '--read-features', action="store", dest="read_features_filename",
-    help="Read features from file")
+    '--read-features', action='store', dest='read_features_filename',
+    help='Read features from file')
 parser.add_argument(
-    '--write-features', action="store", dest="write_features_filename",
-    help="Read features from file")
+    '--write-features', action='store', dest='write_features_filename',
+    help='Read features from file')
 parser.add_argument(
-    '--save', action="store", dest="save_filename", help="Save data to file")
+    '--save', action='store', dest='save_filename', help='Save data to file')
 parser.add_argument(
-    '--language', action='store', dest='language', help="Language of the data",
-    default="ESTONIAN")
+    '--language', action='store', dest='language', help='Language of the data',
+    default='ESTONIAN')
 parser.add_argument(
     '--stress', action='store', dest='stress_dict_filename',
-    help="Stress dictionary")
+    help='Stress dictionary')
 parser.add_argument(
     '--left-context', action='store', dest='left_context',
-    help="Left context length", default=2, type=int)
+    help='Left context length', default=2, type=int)
 parser.add_argument(
     '--right-context', action='store', dest='right_context',
-    help="Left context length", default=2, type=int)
+    help='Left context length', default=2, type=int)
 parser.add_argument(
     '--no-duration-feature', action='store_true', dest='no_use_duration',
-    help="Don't Use duration features")
+    help='Don\'t Use duration features')
 parser.add_argument(
     '--utt2spk', action='store', dest='utt2spk',
-    help="Use the mapping in the given file to add speaker ID to each sample")
+    help='Use the mapping in the given file to add speaker ID to each sample')
 parser.add_argument(
     '--sequences', action='store_true',
-    help="Create a dataset of sequences, with a delay equal to --right-context argument")
+    help='Create a dataset of sequences, with a delay equal to --right-context argument')
 
 parser.add_argument(
     'transitions', metavar='transitions.txt',
@@ -192,11 +187,13 @@ def get_features_and_durs(train_lattice, sequences):
 
                     yield utt_full_features_and_durs
             except IOError as e:
-                log.error('I/O error({0}): {1} -- {2} when processing lattice {3}'.format(
-                    e.errno, e.strerror, e.message,  lat.name))
+                log.error(
+                    'I/O error({0}): {1} -- {2} when processing lattice {3}'.format(
+                        e.errno, e.strerror, e.message,  lat.name))
             except ValueError as e:
-                log.error('ValueError({0}): {1} -- {2} when processing lattice {3}'.format(
-                    0, '', e.message,  lat.name))
+                log.error(
+                    'ValueError({0}): {1} -- {2} when processing lattice {3}'.format(
+                        0, '', e.message,  lat.name))
             except Exception as e:
                 log.error('Exception({0}): {1} -- {2}'.format(
                     e.errno, e.strerror, e.message))
@@ -212,7 +209,7 @@ if __name__ == '__main__':
     durmodel_utils.LEFT_CONTEXT = args.left_context
     durmodel_utils.RIGHT_CONTEXT = args.right_context
 
-    transitions = read_transitions(args.transitions)
+    transitions = durmodel_utils.read_transitions(args.transitions)
 
     log.debug('transitions[%d] = %s', len(transitions) - 2, transitions[-2])
     log.debug('transitions[%d] = %s', len(transitions) - 1, transitions[-1])
@@ -221,11 +218,13 @@ if __name__ == '__main__':
     log.debug('write features filename: %s', args.write_features_filename)
 
     log.info('Reading non-silence phonemes')
-    nonsilence_phonemes = set(get_nonsilence_phonemes(args.nonsilence))
+    nonsilence_phonemes = set(
+        durmodel_utils.get_nonsilence_phonemes(args.nonsilence))
     log.info(' -> nonsilence_phonemes: %d', len(nonsilence_phonemes))
 
     log.info('Reading words.txt')
-    word_list = list(get_words(args.words, encoding=args.encoding))
+    word_list = list(
+        durmodel_utils.get_words(args.words, encoding=args.encoding))
     log.info(' -> # of words: %s', len(word_list))
 
     stress_dict = None
@@ -235,7 +234,7 @@ if __name__ == '__main__':
             args.stress_dict_filename)
         log.info('stress dict: %s', len(stress_dict))
 
-    utt2spkid, speaker_ids = get_utt2spkid(args.utt2spk)
+    utt2spkid, speaker_ids = durmodel_utils.get_utt2spkid(args.utt2spk)
 
     log.info('Processing alignments...')
 

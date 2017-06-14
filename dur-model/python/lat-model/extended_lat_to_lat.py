@@ -56,12 +56,12 @@ for l in sys.stdin:
         if args.acoustic:
             new_am_score = float(x[1]) - scale1 * (
                 normalizer * -float(x[2]) - log_scale2 * float(x[3]))
-            print('{} {}  {}  {},{:.f},{}'.format(
+            print('{} {}  {}  {},{:f},{}'.format(
                 ss[0], ss[1], ss[2], x[0], new_am_score,  x[-1]))
         else:
             new_graph_score = float(x[0]) - scale1 * (
                 normalizer * -float(x[2]) - log_scale2 * float(x[3]))
-            print('{} {}  {}  {:.f},{},{}'.format(
+            print('{} {}  {}  {:f},{},{}'.format(
                 ss[0], ss[1], ss[2], new_graph_score, x[1], x[-1]))
     else:
         print(l, end='')

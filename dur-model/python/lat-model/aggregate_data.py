@@ -1,70 +1,101 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
-import sys
-import codecs
 import argparse
+import codecs
+import logging
+import numpy as np
+import sklearn.utils
+import sys
+
 from collections import OrderedDict
-from pylearn2.datasets import dense_design_matrix
+from os.path import basename
 from pylearn2.datasets import vector_spaces_dataset
 from pylearn2.space import CompositeSpace, VectorSpace, IndexSpace
-
 from pylearn2.utils import serial
 
-import sklearn.utils
-import numpy as np
+from durmodel_utils import get_features, write_features
+
+# Logging settings
+log = logging.getLogger(basename(__file__))
+log.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler(sys.stderr)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    '%(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+log.addHandler(ch)
+
+# Script argument parser settings
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--read-features', action="store", dest="read_features_filename",
+    help="Read features from file")
+parser.add_argument(
+    '--write-features', action="store", dest="write_features_filename",
+    help="Read features from file")
+parser.add_argument(
+    '--devpercent', action="store", dest="devpercent", default=5, type=float,
+    help="Use the bottom N% from each source file as dev data")
+
+parser.add_argument(
+    '--save', action="store", dest="save_filename",
+    help="Save data to file")
+parser.add_argument(
+    '--savedev', action="store", dest="savedev_filename",
+    help="Save development data to file")
+parser.add_argument(
+    '--shuffle', action="store_true",
+    help="Shuffle data before train/dev split")
+parser.add_argument(
+    'data', metavar='data-file features-file', nargs='+',
+    help='Pairs of data and features files')
+
+
+def get_source_features(path, encoding='utf-8'):
+    log.debug('-> loading source features from: %s', path)
+    with codecs.open(path, encoding=encoding) as file_features:
+        for i, feature in enumerate(file_features):
+            yield feature.strip(), i
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--read-features', action="store", dest="read_features_filename",
-                        help="Read features from file")
-    parser.add_argument('--write-features', action="store", dest="write_features_filename",
-                        help="Read features from file")
-    parser.add_argument('--devpercent', action="store", dest="devpercent", default=5, type=float,
-                        help="Use the bottom N% from each source file as dev data")
-
-    parser.add_argument('--save', action="store", dest="save_filename", help="Save data to file")
-    parser.add_argument('--savedev', action="store", dest="savedev_filename", help="Save development data to file")
-    parser.add_argument('--shuffle', action="store_true", help="Shuffle data before train/dev split")
-    parser.add_argument('data', metavar='data-file features-file', nargs='+', help='Pairs of data and features files')
-
     args = parser.parse_args()
 
     if divmod(len(args.data), 2)[1] != 0:
-        print >> sys.stderr, "Odd number of files given?"
+        log.error('Odd number of files given?')
         sys.exit(1)
 
-    sources = [(args.data[i*2], args.data[i*2+1]) for i in range(len(args.data) / 2)]
+    sources = [
+        (args.data[i*2], args.data[i*2+1]) for i in range(len(args.data) / 2)]
 
-    feature_dict = OrderedDict()
     if args.read_features_filename:
-        print ".. Reading features from %s" % args.read_features_filename
-        feature_dict = OrderedDict()
-        for (i, feature) in enumerate(codecs.open(args.read_features_filename, encoding="UTF-8")):
-            feature_dict[feature.strip()] = i
+        log.info('.. Reading features from %s', args.read_features_filename)
+        feature_dict = OrderedDict(get_features(args.read_features_filename))
     else:
-        print ".. Accumulating features from %s to %s" % (sources[0][1], sources[-1][1])
+        log.info('.. Accumulating features from %s to %s',
+                 sources[0][1], sources[-1][1])
+        feature_dict = OrderedDict()
         for f in [s[1] for s in sources]:
-            for (i, feature) in enumerate(codecs.open(f, encoding="UTF-8")):
-                feature_dict.setdefault(feature.strip(), len(feature_dict))
+            with codecs.open(f, encoding='utf-8') as file_feature:
+                for i, feature in enumerate(file_feature):
+                    feature_dict.setdefault(feature.strip(), len(feature_dict))
 
     if args.write_features_filename:
-        print ".. Writing features to %s" % args.write_features_filename
-        with codecs.open(args.write_features_filename, 'w', encoding="UTF-8") as f:
-            for feature in feature_dict:
-                print >> f, feature
+        log.info('.. Writing features to %s', args.write_features_filename)
+        write_features(args.write_features_filename, feature_dict)
 
-
+    # Initialize all matrices
     X = np.zeros((0, len(feature_dict)), dtype=np.float16)
     speakers = np.zeros((0, 1), dtype=np.int)
     y = np.zeros((0, 1), dtype=np.float)
 
-
     for source in sources:
-        print ".. Reading from data file %s with features from %s" % (source[0], source[1])
-        source_feature_dict = OrderedDict()
-        for (i, feature) in enumerate(codecs.open(source[1], encoding="UTF-8")):
-            source_feature_dict[feature.strip()] = i
+        log.info('.. Reading from data file %s with features from %s',
+                 source[0], source[1])
+
+        source_feature_dict = OrderedDict(get_source_features(source[1]))
 
         dataset = serial.load(source[0])
         num_examples = dataset.get_num_examples()
@@ -75,7 +106,8 @@ if __name__ == '__main__':
 
         start = X.shape[0]
         X.resize((start + num_examples, len(feature_dict)))
-        for (fname, fvalue) in source_feature_dict.iteritems():
+
+        for fname, fvalue in source_feature_dict.iteritems():
             X[start:, feature_dict[fname]] = features_data[:, fvalue]
 
         speakers.resize((start + num_examples, 1))
@@ -87,12 +119,13 @@ if __name__ == '__main__':
     num_speakers = dataset.get_data_specs()[0].components[1].max_labels
 
     if args.shuffle:
-        print ".. Shuffling data"
+        log.info('.. Shuffling data')
         X, speakers, y = sklearn.utils.shuffle(X, speakers, y)
-        print ".. Done shuffling"
+        log.info('.. Done shuffling')
 
     num_dev = int(X.shape[0] * 0.01 * args.devpercent)
-    print ".. Using %f percent of data (%d examples) as development data" % (args.devpercent, num_dev)
+    log.info('.. Using %f percent of data (%d examples) as development data',
+             args.devpercent, num_dev)
 
     if num_dev > 0:
         X_dev = X[-num_dev:]
@@ -111,9 +144,11 @@ if __name__ == '__main__':
         data_specs=(space, source))
 
     if args.save_filename:
+        log.info('.. Writing data to %s', args.save_filename)
         serial.save(args.save_filename, final_dataset)
 
     if args.savedev_filename:
+        log.info('.. Writing dev data to %s', args.savedev_filename)
         final_dataset_dev = vector_spaces_dataset.VectorSpacesDataset(
             data=(X_dev, speakers_dev, y_dev),
             data_specs=(space, source))

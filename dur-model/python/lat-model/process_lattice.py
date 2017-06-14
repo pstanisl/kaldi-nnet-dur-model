@@ -192,12 +192,12 @@ if __name__ == '__main__':
             assert len(contexts) == len(lat.arcs)
 
             i = 0
-            for (context, local_feature_and_dur_seq) in zip(contexts, features_and_durs):
+            for context, local_feature_and_dur_seq in zip(contexts,
+                                                          features_and_durs):
                 # print(word_list[lat.arcs[i].word_id], file=sys.stderr)
-                if args.skip_fillers:
-                    if word_list[lat.arcs[i].word_id] in filler_words:
-                        i += 1
-                        continue
+                if args.skip_fillers and [lat.arcs[i].word_id] in filler_words:
+                    i += 1
+                    continue
                 # print('Processing word {}'.format(
                 #     word_list[lat.arcs[i].word_id]), file=sys.stderr)
                 full_word_features = durmodel_utils.compile_features_for_word(
@@ -207,8 +207,8 @@ if __name__ == '__main__':
                 #       word_list[lat.arcs[i].word_id].encode('utf-8'),
                 #       file=sys.stderr)
 
-                context_matrix = np.zeros(
-                    (num_phones, len(feature_dict)), dtype=theano.config.floatX)
+                context_matrix = np.zeros((num_phones, len(feature_dict)),
+                                          dtype=theano.config.floatX)
                 if utt2spkid:
                     speaker_vector = np.ones(
                         (num_phones, 1), dtype=np.int) * utt2spkid[lat.name]
@@ -216,8 +216,8 @@ if __name__ == '__main__':
                     speaker_vector = np.zeros((num_phones, 1), dtype=np.int)
 
                 y = np.zeros((num_phones, 1), dtype=theano.config.floatX)
-                for (j, (phone_features, dur)) in enumerate(full_word_features):
-                    # print >> sys.stderr, '  phone %d' % (j)
+                for j, (phone_features, dur) in enumerate(full_word_features):
+                    # print('  phone {:d}'.format(j), file=sys.stderr)
                     for (feature_name, value) in phone_features:
                         feature_id = feature_dict.get(feature_name, -1)
                         if feature_id >= 0:

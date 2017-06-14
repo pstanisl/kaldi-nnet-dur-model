@@ -83,7 +83,7 @@ def load_stress_dict(filename):
 def get_features(path, encoding='utf-8'):
     log.debug('-> loading from: %s', path)
     with codecs.open(path, encoding=encoding) as file_features:
-        for i, feature in file_features:
+        for i, feature in enumerate(file_features):
             yield feature.strip(), i
 
 

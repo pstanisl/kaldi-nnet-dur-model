@@ -4,7 +4,6 @@ Created on Sep 9, 2013
 
 @author: tanel
 '''
-
 from __future__ import print_function
 from itertools import groupby
 
@@ -86,6 +85,13 @@ def get_features(path, encoding='utf-8'):
     with codecs.open(path, encoding=encoding) as file_features:
         for i, feature in file_features:
             yield feature.strip(), i
+
+
+def get_nonsilence_phonemes(path, encoding='utf-8'):
+    log.debug('-> loading from: %s', path)
+    with codecs.open(path, encoding=encoding) as file_nonsilence:
+        for line in file_nonsilence:
+            yield line.strip().partition('_')[0]
 
 
 def get_stress(word, phonemes, stress_dict):

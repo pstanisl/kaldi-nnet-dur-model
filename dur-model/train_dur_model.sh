@@ -118,7 +118,7 @@ if [ $stage -le 5 ]; then
   envsubst > $dir/durmodel.yaml
   $cuda_cmd $dir/log/train.log \
     PYTHONPATH=\"$PYTHONPATH:./dur-model/python/pylearn2/\" \
-    THEANO_FLAGS=\"device=cuda\" \
+    THEANO_FLAGS=\"device=gpu\" \
     $pylearn_dir/bin/pylearn2-train $dir/durmodel.yaml || exit 1;
 
 

@@ -121,7 +121,7 @@ if [ $stage -le 1 ]; then
     zcat $decode_dir/ali_lat.JOB.gz \| \
     THEANO_FLAGS=\"device=cuda\" \
     PYTHONPATH=dur-model/python/pylearn2/ \
-      python2.7 dur-model/python/lat-model/process_lattice.py \
+      python dur-model/python/lat-model/process_lattice.py \
         --left-context $left_context \
         --right-context $right_context \
         --read-features $dur_model_dir/ali-lat.features \
@@ -149,7 +149,7 @@ if [ $stage -le 2 ]; then
         set -o pipefail \; \
         zcat $decode_dir/ali_lat_extended.JOB.gz \| \
         THEANO_FLAGS=\"device=cpu\" \
-        python2.7 dur-model/python/lat-model/extended_lat_to_lat.py $scale $penalty \| \
+        python dur-model/python/lat-model/extended_lat_to_lat.py $scale $penalty \| \
         gzip -c \> $extended_decode_dir/lat.JOB.gz || exit 1
 
       if ! $skip_scoring ; then

@@ -4,7 +4,7 @@
 # License: BSD 3-clause
 #
 # Example of how to train a duration model on tedlium data, using
-# it's exp/nnet2_online/nnet_ms_sp as the baseline model. 
+# it's exp/nnet2_online/nnet_ms_sp as the baseline model.
 # You must train the baseline model and run the corresponding decoding
 # experiments prior to running this script.
 #
@@ -21,7 +21,7 @@
 
 
 nj=80            # Must be the same as when training the baseline model
-decode_nj=8      # Must be the same as when decoding using the baseline 
+decode_nj=8      # Must be the same as when decoding using the baseline
 
 stage=0 # resume training with --stage=N
 pylearn_dir=~/tools/pylearn2
@@ -63,11 +63,18 @@ if [ $stage -le 2 ]; then
 	for decode_set in  dev test; do
 	  num_jobs=`cat data/${decode_set}_hires/utt2spk|cut -d' ' -f2|sort -u|wc -l`
 	  # Rescore dev lattices using the duration model
-	  ./dur-model/decode_dur_model.sh --cmd "$train_cmd" --cuda-cmd "$cuda_cmd --mem 8g" --nj $num_jobs \
-		--language ENGLISH --fillers "!SIL,[BREATH],[NOISE],[COUGH],[SMACK],[UM],[UH]" --stress-dict dur-model/python/lat-model/data/en/cmudict.0.7a.lc \
-		--scales "0.2 0.3 0.4" --penalties "0.11 0.13 0.15 0.17 0.19 0.21" \
+	  ./dur-model/decode_dur_model.sh \
+	  	--cmd "$train_cmd" \
+		--cuda-cmd "$cuda_cmd --mem 8g" \
+		--nj $num_jobs \
+		--language ENGLISH \
+		--fillers "!SIL,[BREATH],[NOISE],[COUGH],[SMACK],[UM],[UH]" \
+		--stress-dict dur-model/python/lat-model/data/en/cmudict.0.7a.lc \
+		--scales "0.2 0.3 0.4" \
+		--penalties "0.11 0.13 0.15 0.17 0.19 0.21" \
 		--stage 0 \
-		--left-context $left_context --right-context $right_context \
+		--left-context $left_context \
+		--right-context $right_context \
 		data/lang \
 		exp/tri3/graph \
 		data/${decode_set}_hires \
@@ -93,7 +100,7 @@ fi
 #%WER 12.7 | 507 17792 | 89.6 7.7 2.7 2.3 12.7 83.6 | -0.285 | exp/nnet2_online/nnet_ms_sp_online/decode_dev_utt_offline.rescore/score_10_0.0/ctm.filt.filt.sys
 
 #After rescoring with the duration model:
-#$ for x in exp/nnet2_online/*/decode*dur-rescore; do [ -d $x ] && grep Sum $x/s*/score_*/*.sys | utils/best_wer.sh; done 2>/dev/null | grep dev 
+#$ for x in exp/nnet2_online/*/decode*dur-rescore; do [ -d $x ] && grep Sum $x/s*/score_*/*.sys | utils/best_wer.sh; done 2>/dev/null | grep dev
 
 #%WER 12.1 | 507 17792 | 90.0 7.4 2.6 2.1 12.1 82.1 | -0.348 | exp/nnet2_online/nnet_ms_sp_online/decode_dev_utt_offline.rescore.dur-rescore/s0.3_p0.11/score_11_0.5/ctm.filt.filt.sys
 
